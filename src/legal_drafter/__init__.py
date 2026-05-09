@@ -1,7 +1,9 @@
 from legal_drafter.api import (
     generate_document,
     generate_draft,
+    get_default_artifact_root,
     get_category_spec,
+    get_default_index_path,
     list_categories,
     refresh_index,
     render_document,
@@ -73,6 +75,8 @@ __all__ = [
     "IndexNotFoundError",
     "IndexRefreshError",
     "IndexStats",
+    "get_default_artifact_root",
+    "get_default_index_path",
     "LawSearchHit",
     "LawSearchQuery",
     "LLMProvider",

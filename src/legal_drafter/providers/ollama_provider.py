@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
@@ -10,6 +8,7 @@ from urllib.request import Request, urlopen
 
 from legal_drafter.exceptions import ProviderError
 from legal_drafter.models import Citation, DocumentKind, DraftRequest, ProviderAnalysis
+from legal_drafter.runtime import load_env_value
 
 from .base import LLMProvider
 
@@ -30,7 +29,7 @@ class OllamaProvider(LLMProvider):
         if not model.strip():
             raise ValueError("model must not be empty")
         self.model = model.strip()
-        self.base_url = (base_url or _load_env_value("OLLAMA_HOST") or "http://localhost:11434").rstrip("/") + "/"
+        self.base_url = (base_url or load_env_value("OLLAMA_HOST") or "http://localhost:11434").rstrip("/") + "/"
         self.temperature = temperature
         self.timeout = timeout
         self.keep_alive = keep_alive
@@ -253,26 +252,3 @@ class OllamaProvider(LLMProvider):
             ) from exc
         except Exception as exc:  # pragma: no cover
             raise ProviderError("Ollama request failed") from exc
-
-
-def _load_env_value(key: str) -> str | None:
-    direct = os.getenv(key)
-    if direct and direct.strip():
-        return direct.strip()
-
-    env_path = Path.cwd() / ".env"
-    if not env_path.exists():
-        return None
-
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        name, value = stripped.split("=", 1)
-        if name.strip() != key:
-            continue
-        cleaned = value.strip().strip('"').strip("'")
-        if cleaned:
-            os.environ.setdefault(key, cleaned)
-            return cleaned
-    return None

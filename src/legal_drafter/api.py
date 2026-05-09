@@ -10,6 +10,7 @@ from legal_drafter.providers import LLMProvider
 from legal_drafter.renderers.document import render_document as render_document_result
 from legal_drafter.renderers.markdown import render_markdown as render_markdown_result
 from legal_drafter.retrieval.service import retrieve_authority_hits
+from legal_drafter.runtime import get_default_artifact_root, get_default_index_path
 from legal_drafter.sources.law_api import refresh_index_from_source
 
 
@@ -55,3 +56,18 @@ def generate_document(
 
 def render_document(result: DocumentResult, options: RenderOptions | None = None) -> DocumentResult:
     return render_document_result(result, options or RenderOptions())
+
+
+__all__ = [
+    "generate_document",
+    "generate_draft",
+    "get_category_spec",
+    "get_default_artifact_root",
+    "get_default_index_path",
+    "list_categories",
+    "refresh_index",
+    "render_document",
+    "render_markdown",
+    "retrieve_authorities",
+    "search_laws",
+]

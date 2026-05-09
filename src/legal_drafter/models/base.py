@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Iterable
+
+from legal_drafter.runtime import get_default_index_path, load_env_value
 
 
 class DocumentKind(StrEnum):
@@ -295,6 +296,9 @@ class RenderOptions:
     artifact_root: Path | str | None = None
     artifact_token: str | None = None
     artifact_base_url: str | None = None
+    include_pdf: bool = True
+    include_png: bool = True
+    strict: bool = False
 
     def __post_init__(self) -> None:
         if self.artifact_root is not None:
@@ -361,7 +365,7 @@ class DraftRequest:
 
 @dataclass(slots=True)
 class GenerationOptions:
-    index_path: Path | str = Path("law_index.sqlite3")
+    index_path: Path | str = field(default_factory=get_default_index_path)
     top_k: int = 30
     citations_per_provision: int = 3
     freshness_days: int = 7
@@ -411,7 +415,7 @@ class SourceConfig:
     search_query: str | None = None
 
     def __post_init__(self) -> None:
-        resolved_oc = self.oc or _load_env_value("LAW_API_OC")
+        resolved_oc = self.oc or load_env_value("LAW_API_OC")
         if not resolved_oc or not resolved_oc.strip():
             raise ValueError("oc must not be empty")
         self.oc = resolved_oc.strip()
@@ -509,25 +513,3 @@ def _serialize(value: Any) -> Any:
         return [_serialize(inner) for inner in value]
     return value
 
-
-def _load_env_value(key: str) -> str | None:
-    direct = os.getenv(key)
-    if direct and direct.strip():
-        return direct.strip()
-
-    env_path = Path.cwd() / ".env"
-    if not env_path.exists():
-        return None
-
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        name, value = stripped.split("=", 1)
-        if name.strip() != key:
-            continue
-        cleaned = value.strip().strip('"').strip("'")
-        if cleaned:
-            os.environ.setdefault(key, cleaned)
-            return cleaned
-    return None

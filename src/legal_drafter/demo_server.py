@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import json
 import mimetypes
-import tempfile
 from datetime import datetime
 from enum import StrEnum
 from http import HTTPStatus
@@ -30,13 +29,7 @@ from legal_drafter import (
     search_laws,
 )
 from legal_drafter.exceptions import CategorySpecError, IndexNotFoundError, ProviderError, RenderError
-
-MODULE_PATH = Path(__file__).resolve()
-DEMO_PAGE_PATHS = (
-    MODULE_PATH.parents[2] / "examples" / "demo" / "index.html",
-    MODULE_PATH.parents[1] / "examples" / "demo" / "index.html",
-)
-DEFAULT_ARTIFACT_ROOT = Path(tempfile.gettempdir()) / "legal_drafter_artifacts"
+from legal_drafter.runtime import get_default_artifact_root
 
 DOCUMENT_KIND_LABELS = {
     DocumentKind.AUTO: "자동 감지",
@@ -53,7 +46,6 @@ SERVICE_TOPIC_LABELS = {
     ServiceTopic.HEALTHCARE: "헬스케어",
 }
 
-FALLBACK_DEMO_HTML = """<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>legal-drafter demo</title></head><body><p>examples/demo/index.html 파일을 찾을 수 없습니다.</p></body></html>"""
 PARENT_CATEGORY_LABELS = {
     "privacy_policy": "개인정보처리방침",
     "contract": "계약서",
@@ -73,13 +65,26 @@ def create_demo_server(
     model: str,
     host: str,
     port: int,
+    artifact_root: Path | None = None,
+    strict_rendering: bool = False,
 ) -> ThreadingHTTPServer:
-    handler = create_demo_handler(index_path=index_path, model=model)
+    handler = create_demo_handler(
+        index_path=index_path,
+        model=model,
+        artifact_root=artifact_root,
+        strict_rendering=strict_rendering,
+    )
     return ThreadingHTTPServer((host, port), handler)
 
 
-def create_demo_handler(*, index_path: Path, model: str):
-    demo_html = _load_demo_html()
+def create_demo_handler(
+    *,
+    index_path: Path,
+    model: str,
+    artifact_root: Path | None = None,
+    strict_rendering: bool = False,
+):
+    resolved_artifact_root = artifact_root or get_default_artifact_root()
 
     class DemoHandler(BaseHTTPRequestHandler):
         server_version = "legal-drafter-demo/0.1"
@@ -87,7 +92,25 @@ def create_demo_handler(*, index_path: Path, model: str):
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlparse(self.path)
             if parsed.path == "/":
-                self._send_html(demo_html)
+                self._send_json(
+                    HTTPStatus.OK,
+                    {
+                        "service": "legal-drafter",
+                        "mode": "backend",
+                        "status": "ok",
+                        "default_model": model,
+                        "artifact_root": str(resolved_artifact_root),
+                        "endpoints": [
+                            "/api/options",
+                            "/api/categories",
+                            "/api/categories/{id}",
+                            "/api/laws/search",
+                            "/api/generate",
+                            "/api/documents",
+                            "/api/artifacts/{token}/{name}",
+                        ],
+                    },
+                )
                 return
             if parsed.path == "/api/options":
                 self._send_json(
@@ -251,13 +274,14 @@ def create_demo_handler(*, index_path: Path, model: str):
                 generated_result = generate_document(
                     request,
                     provider,
-                    GenerationOptions(index_path=index_path, artifact_root=DEFAULT_ARTIFACT_ROOT),
+                    GenerationOptions(index_path=index_path, artifact_root=resolved_artifact_root),
                 )
                 rendered_result = render_document(
                     generated_result,
                     RenderOptions(
-                        artifact_root=DEFAULT_ARTIFACT_ROOT,
+                        artifact_root=resolved_artifact_root,
                         artifact_base_url="/api/artifacts",
+                        strict=strict_rendering,
                     ),
                 )
             except KeyError as exc:
@@ -293,14 +317,6 @@ def create_demo_handler(*, index_path: Path, model: str):
                 },
             )
 
-        def _send_html(self, body: str) -> None:
-            encoded = body.encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(encoded)))
-            self.end_headers()
-            self.wfile.write(encoded)
-
         def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
             encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
@@ -316,8 +332,8 @@ def create_demo_handler(*, index_path: Path, model: str):
                 return
             token = parts[0]
             relative = Path(*parts[1:])
-            target = (DEFAULT_ARTIFACT_ROOT / token / relative).resolve()
-            root = DEFAULT_ARTIFACT_ROOT.resolve()
+            target = (resolved_artifact_root / token / relative).resolve()
+            root = resolved_artifact_root.resolve()
             if root not in target.parents or not target.exists() or not target.is_file():
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "NOT_FOUND", "message": "아티팩트를 찾을 수 없습니다."})
                 return
@@ -332,22 +348,30 @@ def create_demo_handler(*, index_path: Path, model: str):
     return DemoHandler
 
 
-def serve_demo(*, index_path: Path, model: str, host: str, port: int) -> None:
-    server = create_demo_server(index_path=index_path, model=model, host=host, port=port)
-    print(f"legal-drafter demo server listening on http://{host}:{server.server_port}")
+def serve_demo(
+    *,
+    index_path: Path,
+    model: str,
+    host: str,
+    port: int,
+    artifact_root: Path | None = None,
+    strict_rendering: bool = False,
+) -> None:
+    server = create_demo_server(
+        index_path=index_path,
+        model=model,
+        host=host,
+        port=port,
+        artifact_root=artifact_root,
+        strict_rendering=strict_rendering,
+    )
+    print(f"legal-drafter backend server listening on http://{host}:{server.server_port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover
         pass
     finally:
         server.server_close()
-
-
-def _load_demo_html() -> str:
-    for path in DEMO_PAGE_PATHS:
-        if path.exists():
-            return path.read_text(encoding="utf-8")
-    return FALLBACK_DEMO_HTML
 
 
 def _optional_text(value: Any) -> str | None:

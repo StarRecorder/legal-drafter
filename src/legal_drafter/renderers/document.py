@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import html
 import secrets
-import tempfile
 from dataclasses import replace
 from pathlib import Path
 
 from legal_drafter.catalog import get_category_spec
 from legal_drafter.exceptions import RenderError
 from legal_drafter.models import DocumentResult, RenderOptions, RenderedArtifact, ReviewPolicy, ValidationSeverity
+from legal_drafter.runtime import get_default_artifact_root
 
 
 def render_document(result: DocumentResult, options: RenderOptions | None = None) -> DocumentResult:
@@ -20,7 +20,7 @@ def render_document(result: DocumentResult, options: RenderOptions | None = None
         raise RenderError("procedural documents require all mandatory fields before rendering artifacts")
 
     token = resolved_options.artifact_token or secrets.token_hex(8)
-    root = resolved_options.artifact_root or Path(tempfile.gettempdir()) / "legal_drafter_artifacts"
+    root = resolved_options.artifact_root or get_default_artifact_root()
     artifact_dir = Path(root) / token
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29,7 +29,6 @@ def render_document(result: DocumentResult, options: RenderOptions | None = None
     html_text = _build_print_html(result, spec.render_profile.get("footer_notice"))
     html_path.write_text(html_text, encoding="utf-8")
 
-    png_paths = _render_with_playwright(html_path=html_path, pdf_path=pdf_path)
     artifacts = [
         RenderedArtifact(
             name=html_path.name,
@@ -37,15 +36,30 @@ def render_document(result: DocumentResult, options: RenderOptions | None = None
             path=html_path,
             content_type="text/html; charset=utf-8",
             url=_build_artifact_url(resolved_options.artifact_base_url, token, html_path.name),
-        ),
-        RenderedArtifact(
-            name=pdf_path.name,
-            kind="pdf",
-            path=pdf_path,
-            content_type="application/pdf",
-            url=_build_artifact_url(resolved_options.artifact_base_url, token, pdf_path.name),
-        ),
+        )
     ]
+    png_paths: tuple[Path, ...] = ()
+    if resolved_options.include_pdf or resolved_options.include_png:
+        try:
+            png_paths = _render_with_playwright(
+                html_path=html_path,
+                pdf_path=pdf_path,
+                include_pdf=resolved_options.include_pdf,
+                include_png=resolved_options.include_png,
+            )
+        except RenderError:
+            if resolved_options.strict:
+                raise
+    if resolved_options.include_pdf and pdf_path.exists():
+        artifacts.append(
+            RenderedArtifact(
+                name=pdf_path.name,
+                kind="pdf",
+                path=pdf_path,
+                content_type="application/pdf",
+                url=_build_artifact_url(resolved_options.artifact_base_url, token, pdf_path.name),
+            )
+        )
     artifacts.extend(
         RenderedArtifact(
             name=path.name,
@@ -137,7 +151,7 @@ def _build_print_html(result: DocumentResult, footer_notice: str | None) -> str:
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: "Batang", "Malgun Myeongjo", "Nanum Myeongjo", serif;
+      font-family: "Nanum Myeongjo", "Noto Serif CJK KR", "Source Han Serif KR", "AppleMyungjo", "Malgun Myeongjo", "Batang", serif;
     }}
     .stack {{
       width: 100%;
@@ -208,7 +222,7 @@ def _build_print_html(result: DocumentResult, footer_notice: str | None) -> str:
       font-size: 13px;
       line-height: 1.7;
       color: var(--muted);
-      font-family: "Malgun Gothic", sans-serif;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     }}
     .citations li, .issues li {{
       display: grid;
@@ -218,7 +232,7 @@ def _build_print_html(result: DocumentResult, footer_notice: str | None) -> str:
       margin: 0;
       font-size: 13px;
       color: var(--muted);
-      font-family: "Malgun Gothic", sans-serif;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     }}
     .appendix {{
       display: grid;
@@ -230,10 +244,10 @@ def _build_print_html(result: DocumentResult, footer_notice: str | None) -> str:
     .appendix-section {{
       display: grid;
       gap: 12px;
-      font-family: "Malgun Gothic", sans-serif;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     }}
     .appendix-section h2 {{
-      font-family: "Batang", "Malgun Myeongjo", serif;
+      font-family: "Nanum Myeongjo", "Noto Serif CJK KR", "Source Han Serif KR", "AppleMyungjo", "Malgun Myeongjo", "Batang", serif;
     }}
     .page-footer {{
       position: absolute;
@@ -245,7 +259,7 @@ def _build_print_html(result: DocumentResult, footer_notice: str | None) -> str:
       gap: 16px;
       font-size: 12px;
       color: var(--muted);
-      font-family: "Malgun Gothic", sans-serif;
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       border-top: 1px solid var(--line);
       padding-top: 12px;
     }}
@@ -336,11 +350,19 @@ def _build_artifact_url(base_url: str | None, token: str, name: str) -> str | No
     return f"{base_url}/{token}/{name}"
 
 
-def _render_with_playwright(*, html_path: Path, pdf_path: Path) -> tuple[Path, ...]:
+def _render_with_playwright(
+    *,
+    html_path: Path,
+    pdf_path: Path,
+    include_pdf: bool,
+    include_png: bool,
+) -> tuple[Path, ...]:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:  # pragma: no cover
-        raise RenderError("Playwright is required for PDF/PNG rendering") from exc
+        raise RenderError(
+            "PDF/PNG rendering requires the optional 'render' dependency. Install 'legal-drafter[render]' first."
+        ) from exc
 
     png_paths: list[Path] = []
     try:
@@ -348,19 +370,28 @@ def _render_with_playwright(*, html_path: Path, pdf_path: Path) -> tuple[Path, .
             browser = playwright.chromium.launch()
             page = browser.new_page(viewport={"width": 794, "height": 1123}, device_scale_factor=1)
             page.goto(html_path.as_uri(), wait_until="networkidle")
-            page.pdf(path=str(pdf_path), format="A4", print_background=True, margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
-            page_locator = page.locator(".page")
-            count = page_locator.count()
-            if count <= 0:
-                png_path = html_path.with_name("page-1.png")
-                page.screenshot(path=str(png_path), full_page=True)
-                png_paths.append(png_path)
-            else:
-                for index in range(count):
-                    png_path = html_path.with_name(f"page-{index + 1}.png")
-                    page_locator.nth(index).screenshot(path=str(png_path))
+            if include_pdf:
+                page.pdf(
+                    path=str(pdf_path),
+                    format="A4",
+                    print_background=True,
+                    margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
+                )
+            if include_png:
+                page_locator = page.locator(".page")
+                count = page_locator.count()
+                if count <= 0:
+                    png_path = html_path.with_name("page-1.png")
+                    page.screenshot(path=str(png_path), full_page=True)
                     png_paths.append(png_path)
+                else:
+                    for index in range(count):
+                        png_path = html_path.with_name(f"page-{index + 1}.png")
+                        page_locator.nth(index).screenshot(path=str(png_path))
+                        png_paths.append(png_path)
             browser.close()
     except Exception as exc:  # pragma: no cover
-        raise RenderError("Playwright rendering failed") from exc
+        raise RenderError(
+            "Browser rendering is unavailable. Install Chromium with 'python -m playwright install chromium' or disable strict rendering."
+        ) from exc
     return tuple(png_paths)

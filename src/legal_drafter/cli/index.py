@@ -7,6 +7,7 @@ from pathlib import Path
 
 from legal_drafter import ServiceTopic, SourceConfig, refresh_index
 from legal_drafter.exceptions import LegalDrafterError
+from legal_drafter.runtime import get_default_index_path
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
 
     refresh_parser = subparsers.add_parser("refresh", help="law.go.kr에서 법령 인덱스를 다시 생성합니다.")
-    refresh_parser.add_argument("--index-path", default="law_index.sqlite3", help="SQLite 인덱스 파일 경로")
+    refresh_parser.add_argument("--index-path", default=str(get_default_index_path()), help="SQLite 인덱스 파일 경로")
     refresh_parser.add_argument(
         "--service-topic",
         choices=[topic.value for topic in ServiceTopic],

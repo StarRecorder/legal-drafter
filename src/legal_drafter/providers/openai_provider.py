@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 from typing import Any
 
 from legal_drafter.exceptions import ProviderError
 from legal_drafter.models import Citation, DocumentKind, DraftRequest, ProviderAnalysis
+from legal_drafter.runtime import load_env_value
 
 from .base import LLMProvider
 
@@ -249,23 +248,4 @@ class OpenAIProvider(LLMProvider):
 
 
 def _load_api_key_from_environment() -> str | None:
-    direct = os.getenv("OPENAI_API_KEY")
-    if direct and direct.strip():
-        return direct.strip()
-
-    env_path = Path.cwd() / ".env"
-    if not env_path.exists():
-        return None
-
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", 1)
-        if key.strip() != "OPENAI_API_KEY":
-            continue
-        cleaned = value.strip().strip('"').strip("'")
-        if cleaned:
-            os.environ.setdefault("OPENAI_API_KEY", cleaned)
-            return cleaned
-    return None
+    return load_env_value("OPENAI_API_KEY")
