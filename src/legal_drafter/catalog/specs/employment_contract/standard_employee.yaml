@@ -1,0 +1,77 @@
+id: employment_contract/standard_employee
+parent_category: employment_contract
+label: 근로계약서
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 근로기준법
+  - 최저임금법
+field_schema:
+  - id: employer_name
+    label: 사용자
+    kind: text
+    required: true
+  - id: employee_name
+    label: 근로자
+    kind: text
+    required: true
+  - id: job_title
+    label: 직무
+    kind: text
+    required: true
+  - id: workplace
+    label: 근무장소
+    kind: text
+    required: true
+  - id: start_date
+    label: 근로개시일
+    kind: date
+    required: true
+  - id: salary_amount
+    label: 임금
+    kind: text
+    required: true
+  - id: work_hours
+    label: 소정근로시간
+    kind: text
+    required: true
+  - id: duties
+    label: 담당업무
+    kind: textarea
+    required: true
+section_schema:
+  - id: parties
+    heading: 제1조(당사자)
+    kind: computed
+    body_template: "{employer_name}(이하 '사용자')와 {employee_name}(이하 '근로자')는 다음과 같이 근로계약을 체결합니다."
+    required_fields:
+      - employer_name
+      - employee_name
+  - id: duties
+    heading: 제2조(업무내용 및 근무장소)
+    kind: computed
+    body_template: "근로자의 담당업무는 {duties}이며, 근무장소는 {workplace}입니다."
+    required_fields:
+      - duties
+      - workplace
+  - id: term
+    heading: 제3조(근로개시일 및 근로시간)
+    kind: computed
+    body_template: "근로개시일은 {start_date}로 하며, 소정근로시간은 {work_hours}입니다."
+    required_fields:
+      - start_date
+      - work_hours
+  - id: wage
+    heading: 제4조(임금)
+    kind: computed
+    body_template: "사용자는 근로자에게 직무 {job_title} 수행의 대가로 임금 {salary_amount}을(를) 지급합니다."
+    required_fields:
+      - job_title
+      - salary_amount
+  - id: compliance
+    heading: 제5조(준수사항)
+    kind: llm
+    instruction: "근로기준법상 기본 준수사항, 휴게·휴일, 해지 및 징계 관련 보수적 문구를 작성한다."
+render_profile:
+  document_title_template: "근로계약서"
+  footer_notice: "실제 사업장 규정, 임금체계, 수습 여부는 별도 반영이 필요합니다."

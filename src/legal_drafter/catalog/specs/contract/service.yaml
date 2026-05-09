@@ -1,0 +1,82 @@
+id: contract/service
+parent_category: contract
+label: 용역계약서
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 민법
+  - 전자상거래 등에서의 소비자보호에 관한 법률
+field_schema:
+  - id: contract_title
+    label: 문서 제목
+    kind: text
+    required: true
+    placeholder: 용역계약서
+  - id: provider_name
+    label: 수급인
+    kind: text
+    required: true
+  - id: client_name
+    label: 도급인
+    kind: text
+    required: true
+  - id: service_scope
+    label: 용역 범위
+    kind: textarea
+    required: true
+  - id: contract_start_date
+    label: 계약 시작일
+    kind: date
+    required: true
+  - id: contract_end_date
+    label: 계약 종료일
+    kind: date
+    required: true
+  - id: contract_price
+    label: 용역대금
+    kind: text
+    required: true
+  - id: payment_due
+    label: 지급기일
+    kind: date
+    required: true
+  - id: special_terms
+    label: 특약사항
+    kind: textarea
+    required: false
+section_schema:
+  - id: parties
+    heading: 제1조(당사자)
+    kind: computed
+    body_template: "본 계약은 {client_name}(이하 '도급인')과 {provider_name}(이하 '수급인') 사이의 권리·의무를 정함을 목적으로 합니다."
+    required_fields:
+      - client_name
+      - provider_name
+  - id: scope
+    heading: 제2조(용역 범위)
+    kind: computed
+    body_template: "수급인은 다음 용역을 수행합니다: {service_scope}"
+    required_fields:
+      - service_scope
+  - id: term_payment
+    heading: 제3조(계약기간 및 대금)
+    kind: computed
+    body_template: "계약기간은 {contract_start_date}부터 {contract_end_date}까지로 하며, 도급인은 용역대금 {contract_price}을(를) {payment_due}까지 지급합니다."
+    required_fields:
+      - contract_start_date
+      - contract_end_date
+      - contract_price
+      - payment_due
+  - id: obligations
+    heading: 제4조(이행 및 손해배상)
+    kind: llm
+    instruction: "용역 이행, 결과물 인도, 지연, 손해배상, 계약 해지에 관한 보수적 조항을 작성한다. 용역 범위와 특약을 반영한다."
+    required_fields:
+      - service_scope
+  - id: special
+    heading: 제5조(특약)
+    kind: computed
+    body_template: "당사자는 필요한 경우 다음 특약을 적용합니다: {special_terms}"
+render_profile:
+  document_title_template: "{contract_title}"
+  footer_notice: "본 계약서는 초안이며, 체결 전 실제 거래 구조에 맞춘 검토가 필요합니다."

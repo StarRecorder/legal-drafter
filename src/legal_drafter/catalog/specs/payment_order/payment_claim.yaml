@@ -1,0 +1,68 @@
+id: payment_order/payment_claim
+parent_category: payment_order
+label: 지급명령 신청서
+generation_mode: hybrid
+review_policy: procedural_strict
+seed_authority_keywords:
+  - 민사소송법
+  - 민법
+field_schema:
+  - id: court_name
+    label: 관할 법원
+    kind: text
+    required: true
+  - id: creditor_name
+    label: 채권자
+    kind: text
+    required: true
+  - id: debtor_name
+    label: 채무자
+    kind: text
+    required: true
+  - id: claim_amount
+    label: 청구금액
+    kind: text
+    required: true
+  - id: contract_date
+    label: 계약 체결일
+    kind: date
+    required: true
+  - id: due_date
+    label: 변제기
+    kind: date
+    required: true
+  - id: claim_cause
+    label: 청구원인
+    kind: textarea
+    required: true
+section_schema:
+  - id: caption
+    heading: 사건명
+    kind: computed
+    body_template: "{court_name} 귀중 / 지급명령 신청"
+    required_fields:
+      - court_name
+  - id: parties
+    heading: 1. 당사자
+    kind: computed
+    body_template: "채권자는 {creditor_name}, 채무자는 {debtor_name}입니다."
+    required_fields:
+      - creditor_name
+      - debtor_name
+  - id: claim
+    heading: 2. 청구취지
+    kind: computed
+    body_template: "채무자는 채권자에게 금 {claim_amount} 및 이에 대한 지연손해금을 지급하라는 지급명령을 구합니다."
+    required_fields:
+      - claim_amount
+  - id: cause
+    heading: 3. 청구원인
+    kind: llm
+    instruction: "지급명령 신청서 문체로 계약 체결일, 변제기, 미지급 사실을 반영한 청구원인을 보수적으로 정리한다."
+    required_fields:
+      - contract_date
+      - due_date
+      - claim_cause
+render_profile:
+  document_title_template: "지급명령 신청서"
+  footer_notice: "절차 문서는 관할, 당사자 표시, 청구원인을 제출 전 반드시 별도 검토해야 합니다."

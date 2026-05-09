@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "legal-drafter"
+version = "0.1.0"
+description = "Korean legal authority indexed draft generation for terms of service and privacy policies."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+license-files = ["LICENSE"]
+authors = [
+  { name = "StarRecorder" },
+]
+keywords = ["legal", "korea", "law", "privacy-policy", "terms-of-service"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "playwright>=1.44.0",
+  "PyYAML>=6.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/StarRecorder/legal-drafter"
+Repository = "https://github.com/StarRecorder/legal-drafter"
+Issues = "https://github.com/StarRecorder/legal-drafter/issues"
+
+[project.scripts]
+legal-drafter-index = "legal_drafter.cli.index:main"
+legal-drafter-demo = "legal_drafter.cli.demo:main"
+
+[project.optional-dependencies]
+openai = ["openai>=1.30.0"]
+dev = ["ruff>=0.6.0"]
+
+[tool.hatch.build]
+include = [
+  "examples/demo/index.html",
+  "src/legal_drafter/catalog/specs/**/*.yaml",
+  "src/legal_drafter/py.typed",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/legal_drafter"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"examples/demo/index.html" = "examples/demo/index.html"
+"src/legal_drafter/catalog/specs" = "legal_drafter/catalog/specs"
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]

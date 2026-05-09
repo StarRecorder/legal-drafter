@@ -1,0 +1,59 @@
+id: power_of_attorney/general
+parent_category: power_of_attorney
+label: 일반 위임장
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 민법
+field_schema:
+  - id: principal_name
+    label: 위임인
+    kind: text
+    required: true
+  - id: principal_address
+    label: 위임인 주소
+    kind: textarea
+    required: true
+  - id: agent_name
+    label: 수임인
+    kind: text
+    required: true
+  - id: agent_address
+    label: 수임인 주소
+    kind: textarea
+    required: true
+  - id: authority_scope
+    label: 위임 범위
+    kind: textarea
+    required: true
+  - id: effective_date
+    label: 위임일
+    kind: date
+    required: true
+section_schema:
+  - id: caption
+    heading: 위임 내용
+    kind: computed
+    body_template: "위임인 {principal_name}는 수임인 {agent_name}에게 다음 사항을 위임합니다."
+    required_fields:
+      - principal_name
+      - agent_name
+  - id: scope
+    heading: 1. 위임 범위
+    kind: computed
+    body_template: "{authority_scope}"
+    required_fields:
+      - authority_scope
+  - id: effect
+    heading: 2. 효력 및 증빙
+    kind: llm
+    instruction: "위임 범위, 재위임 제한, 본인확인, 서명날인 필요성에 관한 보수적인 문구를 작성한다."
+  - id: date
+    heading: 3. 작성일자
+    kind: computed
+    body_template: "본 위임장은 {effective_date} 작성되었습니다."
+    required_fields:
+      - effective_date
+render_profile:
+  document_title_template: "위임장"
+  footer_notice: "기관 제출용 위임장은 제출처 요구 형식과 인감·신분증 요건을 별도 확인해야 합니다."

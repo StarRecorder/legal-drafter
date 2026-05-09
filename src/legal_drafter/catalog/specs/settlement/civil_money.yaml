@@ -1,0 +1,61 @@
+id: settlement/civil_money
+parent_category: settlement
+label: 금전분쟁 합의서
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 민법
+field_schema:
+  - id: agreement_title
+    label: 문서 제목
+    kind: text
+    required: true
+    placeholder: 합의서
+  - id: creditor_name
+    label: 채권자
+    kind: text
+    required: true
+  - id: debtor_name
+    label: 채무자
+    kind: text
+    required: true
+  - id: dispute_background
+    label: 분쟁 경위
+    kind: textarea
+    required: true
+  - id: settlement_amount
+    label: 합의금
+    kind: text
+    required: true
+  - id: payment_schedule
+    label: 지급 일정
+    kind: textarea
+    required: true
+section_schema:
+  - id: preamble
+    heading: 제1조(당사자 및 목적)
+    kind: computed
+    body_template: "{creditor_name}와 {debtor_name}는 다음 금전분쟁을 원만히 해결하기 위하여 본 합의서를 작성합니다."
+    required_fields:
+      - creditor_name
+      - debtor_name
+  - id: background
+    heading: 제2조(분쟁 경위)
+    kind: computed
+    body_template: "당사자 사이의 분쟁 경위는 다음과 같습니다: {dispute_background}"
+    required_fields:
+      - dispute_background
+  - id: payment
+    heading: 제3조(합의 내용)
+    kind: computed
+    body_template: "{debtor_name}는 {creditor_name}에게 합의금 {settlement_amount}을(를) 다음 일정에 따라 지급합니다: {payment_schedule}"
+    required_fields:
+      - settlement_amount
+      - payment_schedule
+  - id: release
+    heading: 제4조(추가 청구 금지)
+    kind: llm
+    instruction: "합의 이행 시 추가 청구 금지, 비밀유지, 위반 시 조치, 관할에 관한 보수적인 문구를 작성한다."
+render_profile:
+  document_title_template: "{agreement_title}"
+  footer_notice: "본 합의서는 참고용 초안이며, 실제 지급 일정과 면제 범위는 별도 확인이 필요합니다."

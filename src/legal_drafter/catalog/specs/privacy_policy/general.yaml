@@ -1,0 +1,69 @@
+id: privacy_policy/general
+parent_category: privacy_policy
+label: 일반 개인정보처리방침
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 개인정보 보호법
+  - 개인정보 보호법 시행령
+  - 개인정보 보호법 시행규칙
+field_schema:
+  - id: company_name
+    label: 회사명
+    kind: text
+    required: true
+    placeholder: 예시회사
+  - id: service_name
+    label: 서비스명
+    kind: text
+    required: true
+    placeholder: 예시 서비스
+  - id: contact_email
+    label: 문의 이메일
+    kind: text
+    required: true
+  - id: data_categories
+    label: 수집하는 개인정보 항목
+    kind: list
+    required: true
+  - id: retention_policy
+    label: 보유 및 파기 기준
+    kind: textarea
+    required: true
+  - id: consignment_providers
+    label: 위탁업체
+    kind: list
+    required: false
+section_schema:
+  - id: purpose
+    heading: 제1조(목적)
+    kind: computed
+    body_template: "{company_name}(이하 '회사')는 {service_name} 운영과 관련하여 개인정보 보호법 등 관계 법령을 준수하고, 이용자의 개인정보와 권익을 보호하기 위하여 본 개인정보처리방침을 수립·공개합니다."
+    required_fields:
+      - company_name
+      - service_name
+  - id: collection
+    heading: 제2조(수집 항목 및 이용 목적)
+    kind: llm
+    instruction: "수집하는 개인정보 항목과 이용 목적을 서비스 맥락에 맞게 보수적으로 정리한다. 사용자가 제공한 수집 항목과 선택 법령만 근거로 삼는다."
+    required_fields:
+      - data_categories
+  - id: retention
+    heading: 제3조(보유 및 이용 기간)
+    kind: computed
+    body_template: "회사는 개인정보 수집·이용 목적이 달성되면 지체 없이 해당 정보를 파기합니다. 다만 법령상 보존의무가 있는 경우에는 그 기간 동안 안전하게 보관하며, 현재 기준은 다음과 같습니다: {retention_policy}"
+    required_fields:
+      - retention_policy
+  - id: rights
+    heading: 제4조(정보주체의 권리)
+    kind: template
+    body_template: "이용자는 언제든지 자신의 개인정보에 대한 열람, 정정, 삭제, 처리정지 및 동의 철회를 요구할 수 있으며, 회사는 관련 법령에 따라 지체 없이 필요한 조치를 취합니다."
+  - id: contact
+    heading: 제5조(문의처)
+    kind: computed
+    body_template: "개인정보 보호 관련 문의는 {contact_email}로 접수할 수 있으며, 회사는 합리적인 기간 내에 답변 및 처리 결과를 안내합니다."
+    required_fields:
+      - contact_email
+render_profile:
+  document_title_template: "{company_name} 개인정보처리방침"
+  footer_notice: "본 문서는 {today} 기준 초안이며, 게시 전 최종 법률 검토가 필요합니다."

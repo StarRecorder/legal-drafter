@@ -1,0 +1,61 @@
+id: content_certification/payment_demand
+parent_category: content_certification
+label: 대금지급 내용증명
+generation_mode: hybrid
+review_policy: procedural_strict
+seed_authority_keywords:
+  - 민법
+  - 상법
+field_schema:
+  - id: sender_name
+    label: 발신인
+    kind: text
+    required: true
+  - id: recipient_name
+    label: 수신인
+    kind: text
+    required: true
+  - id: recipient_address
+    label: 수신인 주소
+    kind: textarea
+    required: true
+  - id: claim_amount
+    label: 청구금액
+    kind: text
+    required: true
+  - id: basis_facts
+    label: 청구 근거 사실
+    kind: textarea
+    required: true
+  - id: due_date
+    label: 지급 기한
+    kind: date
+    required: true
+section_schema:
+  - id: heading
+    heading: 제목
+    kind: computed
+    body_template: "수신인 {recipient_name}에 대한 대금 지급 촉구 내용증명"
+    required_fields:
+      - recipient_name
+  - id: facts
+    heading: 1. 청구 취지 및 사실관계
+    kind: computed
+    body_template: "발신인 {sender_name}는 다음과 같은 사유로 귀하에게 {claim_amount}의 지급을 청구합니다: {basis_facts}"
+    required_fields:
+      - sender_name
+      - claim_amount
+      - basis_facts
+  - id: demand
+    heading: 2. 지급 촉구
+    kind: computed
+    body_template: "귀하는 위 금액을 {due_date}까지 지급하여 주시기 바랍니다. 위 기한 내 이행이 없을 경우 민형사상 가능한 조치를 검토할 예정입니다."
+    required_fields:
+      - due_date
+  - id: closing
+    heading: 3. 법적 고지
+    kind: llm
+    instruction: "내용증명 문체에 맞게 추가 분쟁 방지, 증거 보전, 비용 부담 가능성에 관한 보수적인 마무리 문구를 작성한다."
+render_profile:
+  document_title_template: "내용증명"
+  footer_notice: "절차 문서는 발송 전 수신인 정보, 기한, 청구원인을 반드시 확인해야 합니다."

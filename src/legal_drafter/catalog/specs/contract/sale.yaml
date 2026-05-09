@@ -1,0 +1,89 @@
+id: contract/sale
+parent_category: contract
+label: 매매계약서
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 민법
+  - 상법
+field_schema:
+  - id: contract_title
+    label: 문서 제목
+    kind: text
+    required: true
+    placeholder: 매매계약서
+  - id: seller_name
+    label: 매도인
+    kind: text
+    required: true
+  - id: buyer_name
+    label: 매수인
+    kind: text
+    required: true
+  - id: sale_items
+    label: 매매 대상 물품
+    kind: group
+    repeatable: true
+    required: true
+    fields:
+      - id: item_name
+        label: 품명
+        kind: text
+        required: true
+      - id: quantity
+        label: 수량
+        kind: text
+        required: true
+      - id: unit_price
+        label: 단가
+        kind: text
+        required: true
+  - id: total_price
+    label: 총 매매대금
+    kind: text
+    required: true
+  - id: delivery_date
+    label: 인도일
+    kind: date
+    required: true
+  - id: payment_due
+    label: 지급기일
+    kind: date
+    required: true
+  - id: special_terms
+    label: 특약사항
+    kind: textarea
+    required: false
+section_schema:
+  - id: parties
+    heading: 제1조(당사자)
+    kind: computed
+    body_template: "본 계약은 매도인 {seller_name}와 매수인 {buyer_name} 사이의 매매에 관하여 체결됩니다."
+    required_fields:
+      - seller_name
+      - buyer_name
+  - id: subject
+    heading: 제2조(매매 목적물)
+    kind: computed
+    body_template: "매매 대상 물품은 다음과 같습니다: {sale_items}"
+    required_fields:
+      - sale_items
+  - id: price
+    heading: 제3조(대금 및 지급)
+    kind: computed
+    body_template: "총 매매대금은 {total_price}이며, 매수인은 이를 {payment_due}까지 지급합니다. 목적물의 인도일은 {delivery_date}로 합니다."
+    required_fields:
+      - total_price
+      - payment_due
+      - delivery_date
+  - id: warranty
+    heading: 제4조(하자 및 위험부담)
+    kind: llm
+    instruction: "매도인의 하자담보, 위험이전, 계약해제, 손해배상에 관한 보수적인 조항을 작성한다. 선택 법령과 물품 정보만 반영한다."
+  - id: special
+    heading: 제5조(특약)
+    kind: computed
+    body_template: "당사자는 필요한 경우 다음 특약을 적용합니다: {special_terms}"
+render_profile:
+  document_title_template: "{contract_title}"
+  footer_notice: "본 문서는 일반 매매계약 초안이며, 실제 품목·검수·세금 조건은 별도 확인이 필요합니다."

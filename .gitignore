@@ -1,0 +1,16 @@
+.venv/
+.env
+law_index.sqlite3
+*.sqlite3
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+.coverage
+tests/
+demo_server.stdout.log
+demo_server.stderr.log
+dist/
+dist_check/
+build/
+*.egg-info/

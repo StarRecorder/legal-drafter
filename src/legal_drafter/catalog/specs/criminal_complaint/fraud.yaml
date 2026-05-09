@@ -1,0 +1,67 @@
+id: criminal_complaint/fraud
+parent_category: criminal_complaint
+label: 사기 고소장
+generation_mode: hybrid
+review_policy: procedural_strict
+seed_authority_keywords:
+  - 형법
+  - 형사소송법
+field_schema:
+  - id: complainant_name
+    label: 고소인
+    kind: text
+    required: true
+  - id: suspect_name
+    label: 피고소인
+    kind: text
+    required: true
+  - id: incident_date
+    label: 사건 일시
+    kind: date
+    required: true
+  - id: incident_location
+    label: 사건 장소
+    kind: text
+    required: true
+  - id: facts
+    label: 범죄사실 요지
+    kind: textarea
+    required: true
+  - id: damage_amount
+    label: 피해금액
+    kind: text
+    required: true
+  - id: evidence_list
+    label: 주요 증거
+    kind: list
+    required: true
+section_schema:
+  - id: caption
+    heading: 사건명
+    kind: computed
+    body_template: "사기 고소장"
+  - id: parties
+    heading: 1. 당사자
+    kind: computed
+    body_template: "고소인은 {complainant_name}, 피고소인은 {suspect_name}입니다."
+    required_fields:
+      - complainant_name
+      - suspect_name
+  - id: facts
+    heading: 2. 고소사실
+    kind: llm
+    instruction: "사기 고소장 문체로 사건 일시, 장소, 기망행위, 피해금액, 현재 피해 상태를 사실 위주로 정리한다."
+    required_fields:
+      - incident_date
+      - incident_location
+      - facts
+      - damage_amount
+  - id: evidence
+    heading: 3. 입증자료
+    kind: computed
+    body_template: "고소인이 현재 확보한 주요 자료는 다음과 같습니다: {evidence_list}"
+    required_fields:
+      - evidence_list
+render_profile:
+  document_title_template: "고소장"
+  footer_notice: "형사 절차 문서는 사실관계와 증거 정리가 핵심이므로 제출 전 전문가 검토가 필요합니다."

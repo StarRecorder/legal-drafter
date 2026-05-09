@@ -1,0 +1,66 @@
+id: loan_note/private_loan
+parent_category: loan_note
+label: 차용증
+generation_mode: hybrid
+review_policy: standard
+seed_authority_keywords:
+  - 민법
+  - 이자제한법
+field_schema:
+  - id: lender_name
+    label: 채권자
+    kind: text
+    required: true
+  - id: borrower_name
+    label: 채무자
+    kind: text
+    required: true
+  - id: principal_amount
+    label: 원금
+    kind: text
+    required: true
+  - id: loan_date
+    label: 차용일
+    kind: date
+    required: true
+  - id: maturity_date
+    label: 변제기
+    kind: date
+    required: true
+  - id: interest_rate
+    label: 이자율
+    kind: text
+    required: false
+  - id: repayment_method
+    label: 변제방법
+    kind: textarea
+    required: true
+section_schema:
+  - id: parties
+    heading: 제1조(당사자)
+    kind: computed
+    body_template: "채권자 {lender_name}와 채무자 {borrower_name}는 다음과 같이 금전소비대차 관계를 확인합니다."
+    required_fields:
+      - lender_name
+      - borrower_name
+  - id: principal
+    heading: 제2조(차용금)
+    kind: computed
+    body_template: "채무자는 {loan_date}에 채권자로부터 원금 {principal_amount}을 차용하였음을 확인합니다."
+    required_fields:
+      - loan_date
+      - principal_amount
+  - id: maturity
+    heading: 제3조(변제기 및 방법)
+    kind: computed
+    body_template: "채무자는 {maturity_date}까지 다음 방법으로 차용금을 변제합니다: {repayment_method}"
+    required_fields:
+      - maturity_date
+      - repayment_method
+  - id: interest
+    heading: 제4조(이자 및 지연손해금)
+    kind: llm
+    instruction: "이자 약정, 지연손해금, 기한의 이익 상실에 관한 보수적 문구를 작성한다. 이자율이 비어 있으면 무이자 또는 법정 범위 내 표현으로 제한한다."
+render_profile:
+  document_title_template: "차용증"
+  footer_notice: "실제 금전거래 문서는 송금증빙, 변제기, 이자율 적법성 검토가 필요합니다."
